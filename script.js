@@ -1,17 +1,21 @@
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { initializeApp }
+from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 
 import {
   getDatabase,
   ref,
   onValue
-} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+}
+from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
 
-import { firebaseConfig } from "./Secrets";
+import { firebaseConfig }
+from "./firebase-config.js";
 
+const app =
+  initializeApp(firebaseConfig);
 
-
-let socket =
-  new WebSocket("ws://" + location.host + "/ws");
+const db =
+  getDatabase(app);
 
 let chart;
 
@@ -21,11 +25,12 @@ let currentFilter = "all";
 
 
 
-socket.onmessage = function(event)
-{
-  let data = JSON.parse(event.data);
+const levelRef =
+  ref(db, "/tank/level");
 
-  let level = data.level;
+onValue(levelRef, (snapshot) =>
+{
+  const level = snapshot.val();
 
   document.getElementById("fill").style.height =
     level + "%";
@@ -67,20 +72,12 @@ socket.onmessage = function(event)
   statusEl.innerText = status;
 
   statusEl.className = cls;
-};
+});
 
 
-
-const app =
-  initializeApp(firebaseConfig);
-
-const db =
-  getDatabase(app);
 
 const logsRef =
   ref(db, "/tank/logs");
-
-
 
 onValue(logsRef, (snapshot) =>
 {
