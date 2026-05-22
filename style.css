@@ -12,6 +12,7 @@ body{
   font-family: "Urbanist", sans-serif;
   min-height: 100vh;
   padding: 30px;
+  overflow-x: hidden;
 }
 
 .dashboard{
@@ -26,6 +27,7 @@ body{
   flex-direction: column;
   align-items: center;
   margin-left: 7%;
+  flex: 1;
 }
 
 .title{
@@ -94,6 +96,7 @@ body{
   max-width: 700px;
   height: 550px;
   margin-right: 7%;
+  flex: 1;
 
   
 

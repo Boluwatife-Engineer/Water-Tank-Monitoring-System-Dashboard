@@ -25,7 +25,7 @@ let currentFilter = "all";
 
 
 const levelRef =
-  ref(db, "/tank/level");
+  ref(db, "/tank/current");
 
 onValue(levelRef, (snapshot) =>
 {
@@ -72,6 +72,8 @@ onValue(levelRef, (snapshot) =>
 
   statusEl.className = cls;
 });
+
+
 
 
 
