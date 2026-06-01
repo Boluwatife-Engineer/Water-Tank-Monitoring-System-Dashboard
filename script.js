@@ -14,7 +14,7 @@ let chart;
 let allLogs = [];
 let currentFilter = "all";
 
-/* CURRENT LEVEL */
+
 const levelRef = ref(db, "/tank/current");
 
 onValue(levelRef, (snapshot) => {
@@ -48,7 +48,7 @@ onValue(levelRef, (snapshot) => {
   statusEl.className = cls;
 });
 
-/* LOGS */
+
 const logsRef = ref(db, "/tank/logs");
 
 onValue(logsRef, (snapshot) => {
@@ -67,7 +67,7 @@ onValue(logsRef, (snapshot) => {
   applyFilter(currentFilter);
 });
 
-/* RENDER LOGS */
+
 function renderLogs(logs) {
   const logsBody = document.getElementById("logs-body");
   logsBody.innerHTML = "";
@@ -90,7 +90,7 @@ function renderLogs(logs) {
   });
 }
 
-/* RENDER CHART */
+
 function renderChart(logs) {
   const ctx = document.getElementById("levelChart");
 
@@ -146,7 +146,7 @@ function renderChart(logs) {
   });
 }
 
-/* FILTER */
+
 function applyFilter(filter) {
   currentFilter = filter;
 
@@ -172,7 +172,7 @@ function applyFilter(filter) {
   renderChart(filtered);
 }
 
-/* BUTTONS */
+
 document.querySelectorAll(".filters button")
   .forEach(btn => {
     btn.addEventListener("click", () => {
