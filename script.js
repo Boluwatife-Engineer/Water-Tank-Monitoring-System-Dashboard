@@ -1,136 +1,88 @@
-import { initializeApp }
-from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import {
   getDatabase,
   ref,
   onValue
-}
-from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
 
 import { firebaseConfig } from "./secrets.js";
 
-const app =
-  initializeApp(firebaseConfig);
-
-const db =
-  getDatabase(app);
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
 
 let chart;
-
 let allLogs = [];
-
 let currentFilter = "all";
 
+/* CURRENT LEVEL */
+const levelRef = ref(db, "/tank/current");
 
+onValue(levelRef, (snapshot) => {
+  const level = Number(snapshot.val()) || 0;
 
-const levelRef =
-  ref(db, "/tank/current");
-
-onValue(levelRef, (snapshot) =>
-{
-  const level = snapshot.val();
-
-  document.getElementById("fill").style.height =
-    level + "%";
-
-  document.getElementById("percent").innerText =
-    level + "%";
+  document.getElementById("fill").style.height = `${level}%`;
+  document.getElementById("percent").innerText = `${level}%`;
 
   let status = "EMPTY";
-
   let cls = "";
 
-  if (level == 25)
-  {
+  if (level <= 25) {
     status = "LOW";
     cls = "low";
-  }
-
-  if (level == 50)
-  {
+  } 
+  else if (level <= 50) {
     status = "MEDIUM";
     cls = "mid";
-  }
-
-  if (level == 75)
-  {
+  } 
+  else if (level <= 75) {
     status = "HIGH";
     cls = "high";
-  }
-
-  if (level == 100)
-  {
+  } 
+  else {
     status = "FULL";
     cls = "high";
   }
 
-  let statusEl =
-    document.getElementById("status");
-
+  const statusEl = document.getElementById("status");
   statusEl.innerText = status;
-
   statusEl.className = cls;
 });
 
+/* LOGS */
+const logsRef = ref(db, "/tank/logs");
 
-
-
-
-const logsRef =
-  ref(db, "/tank/logs");
-
-onValue(logsRef, (snapshot) =>
-{
+onValue(logsRef, (snapshot) => {
   const data = snapshot.val();
-
   if (!data) return;
 
-  allLogs = Object.keys(data).map((key) =>
-  {
-    return {
+  allLogs = Object.entries(data)
+    .map(([key, value]) => ({
       timestamp: Number(key),
-      level: data[key].level
-    };
-  });
+      level: Number(value?.level ?? 0)
+    }))
+    .filter(x => !isNaN(x.timestamp));
 
-  allLogs.sort((a, b) =>
-    a.timestamp - b.timestamp);
+  allLogs.sort((a, b) => a.timestamp - b.timestamp);
 
   applyFilter(currentFilter);
 });
 
-
-
-function renderLogs(logs)
-{
-  const logsBody =
-    document.getElementById("logs-body");
-
+/* RENDER LOGS */
+function renderLogs(logs) {
+  const logsBody = document.getElementById("logs-body");
   logsBody.innerHTML = "";
 
-  const latestLogs =
-    [...logs].reverse().slice(0, 20);
+  const latestLogs = [...logs].slice(-20).reverse();
 
-  latestLogs.forEach((log) =>
-  {
-    const dateObj =
-      new Date(log.timestamp * 1000);
+  latestLogs.forEach((log) => {
+    const dateObj = new Date(log.timestamp * 1000);
 
-    const date =
-      dateObj.toLocaleDateString();
-
-    const time =
-      dateObj.toLocaleTimeString();
-
-    const row =
-      document.createElement("div");
-
+    const row = document.createElement("div");
     row.className = "log-item";
 
     row.innerHTML = `
-      <span>${date}</span>
-      <span>${time}</span>
+      <span>${dateObj.toLocaleDateString()}</span>
+      <span>${dateObj.toLocaleTimeString()}</span>
       <span>${log.level}%</span>
     `;
 
@@ -138,195 +90,92 @@ function renderLogs(logs)
   });
 }
 
+/* RENDER CHART */
+function renderChart(logs) {
+  const ctx = document.getElementById("levelChart");
 
+  const latest = logs.slice(-20);
 
-function renderChart(logs)
-{
-  const latestLogs =
-    logs.slice(-20);
+  const labels = latest.map(log =>
+    new Date(log.timestamp * 1000).toLocaleTimeString()
+  );
 
-  const labels =
-    latestLogs.map((log) =>
-    {
-      const date =
-        new Date(log.timestamp * 1000);
+  const values = latest.map(log => log.level);
 
-      return date.toLocaleTimeString();
-    });
+  if (chart) chart.destroy();
 
-  const levels =
-    latestLogs.map((log) =>
-      log.level);
-
-  const ctx =
-    document.getElementById("levelChart");
-
-  if (chart)
-  {
-    chart.destroy();
-  }
-
-  chart = new Chart(ctx,
-  {
+  chart = new Chart(ctx, {
     type: "line",
-
-    data:
-    {
-      labels: labels,
-
-      datasets:
-      [
-        {
-          label: "Water Level",
-
-          data: levels,
-
-          borderColor: "#38bdf8",
-
-          backgroundColor:
-            "rgba(56,189,248,0.15)",
-
-          fill: true,
-
-          tension: 0.45,
-
-          cubicInterpolationMode:
-            "monotone",
-
-          borderWidth: 4,
-
-          pointRadius: 5,
-
-          pointHoverRadius: 8,
-
-          pointBackgroundColor:
-            "#38bdf8",
-
-          pointBorderColor:
-            "#ffffff",
-
-          pointBorderWidth: 2,
-
-          pointStyle: "circle"
-        }
-      ]
+    data: {
+      labels,
+      datasets: [{
+        label: "Water Level",
+        data: values,
+        borderColor: "#38bdf8",
+        backgroundColor: "rgba(56,189,248,0.15)",
+        fill: true,
+        tension: 0.4,
+        borderWidth: 3,
+        pointRadius: 4
+      }]
     },
-
-    options:
-    {
+    options: {
       responsive: true,
-
       maintainAspectRatio: false,
-
-      animation:
-      {
-        duration: 700
+      animation: {
+        duration: 500
       },
-
-      plugins:
-      {
-        legend:
-        {
-          labels:
-          {
-            color: "white"
-          }
+      scales: {
+        y: {
+          min: 0,
+          max: 100,
+          ticks: { color: "white" },
+          grid: { color: "rgba(255,255,255,0.08)" }
+        },
+        x: {
+          ticks: { color: "white" },
+          grid: { color: "rgba(255,255,255,0.08)" }
         }
       },
-
-      scales:
-      {
-        x:
-        {
-          ticks:
-          {
-            color: "white"
-          },
-
-          grid:
-          {
-            color:
-              "rgba(255,255,255,0.08)"
-          }
-        },
-
-        y:
-        {
-          min: 0,
-
-          max: 100,
-
-          ticks:
-          {
-            color: "white"
-          },
-
-          grid:
-          {
-            color:
-              "rgba(255,255,255,0.08)"
-          }
+      plugins: {
+        legend: {
+          labels: { color: "white" }
         }
       }
     }
   });
 }
 
-
-
-function applyFilter(filter)
-{
+/* FILTER */
+function applyFilter(filter) {
   currentFilter = filter;
 
-  let filtered = allLogs;
+  let filtered = [...allLogs];
 
-  if (filter === "low")
-  {
-    filtered =
-      allLogs.filter((log) =>
-        log.level <= 25);
+  if (filter === "low") {
+    filtered = allLogs.filter(l => l.level <= 25);
   }
 
-  if (filter === "high")
-  {
-    filtered =
-      allLogs.filter((log) =>
-        log.level >= 75);
+  if (filter === "high") {
+    filtered = allLogs.filter(l => l.level >= 75);
   }
 
-  if (filter === "today")
-  {
-    const today =
-      new Date().toLocaleDateString();
+  if (filter === "today") {
+    const today = new Date().toDateString();
 
-    filtered =
-      allLogs.filter((log) =>
-      {
-        const logDate =
-          new Date(log.timestamp * 1000)
-          .toLocaleDateString();
-
-        return logDate === today;
-      });
+    filtered = allLogs.filter(l =>
+      new Date(l.timestamp * 1000).toDateString() === today
+    );
   }
 
   renderLogs(filtered);
-
   renderChart(filtered);
 }
 
-
-
-const buttons =
-  document.querySelectorAll(".filters button");
-
-buttons.forEach((button) =>
-{
-  button.addEventListener("click", () =>
-  {
-    const filter =
-      button.dataset.filter;
-
-    applyFilter(filter);
+/* BUTTONS */
+document.querySelectorAll(".filters button")
+  .forEach(btn => {
+    btn.addEventListener("click", () => {
+      applyFilter(btn.dataset.filter);
+    });
   });
-});
